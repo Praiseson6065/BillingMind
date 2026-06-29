@@ -10,8 +10,8 @@ postgres:
 redis:
   addr: localhost:6379
 stripe:
-  secret_key: <secret_key>
-  webhook_secret: <webhook_secret>
+  secret_key: ""
+  webhook_secret: ""
 ontology_path: ../ontology/billing.jsonld
 agents:
   billing_url: http://localhost:8001

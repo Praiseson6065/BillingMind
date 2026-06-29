@@ -4,6 +4,7 @@ import (
 	"Billingmind/config"
 	"Billingmind/internal/db"
 	"Billingmind/internal/ontology"
+	"Billingmind/internal/queue"
 	stripeClient "Billingmind/internal/stripe"
 	"Billingmind/internal/webhooks"
 	"context"
@@ -13,9 +14,12 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	_ = godotenv.Load()
+
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		log.Fatal("unable to load config: ", err)
@@ -35,8 +39,18 @@ func main() {
 	}
 	resolver := ontology.NewResolver(ont)
 
+	redisClient := queue.NewRedisClient(cfg.Redis)
+	defer redisClient.Close()
+
+	if err := redisClient.Ping(context.Background()).Err(); err != nil {
+		log.Fatal("unable to connect to redis: ", err)
+	}
+	log.Println("redis connected")
+
+	producer := queue.NewTaskProducer(redisClient)
+
 	sc := stripeClient.NewStripeClient(cfg.Stripe.SecretKey)
-	stripeWebhook := webhooks.NewStripeWebhookHandler(sc, cfg.Stripe.WebhookSecret, queries, resolver)
+	stripeWebhook := webhooks.NewStripeWebhookHandler(sc, cfg.Stripe.WebhookSecret, queries, resolver, producer)
 
 	app := gin.New()
 	app.Use(gin.Logger())

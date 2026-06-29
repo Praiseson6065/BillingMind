@@ -3,6 +3,7 @@ package webhooks
 import (
 	"Billingmind/internal/db"
 	"Billingmind/internal/ontology"
+	"Billingmind/internal/queue"
 	"context"
 	"encoding/json"
 	"io"
@@ -19,14 +20,16 @@ type StripeWebhookHandler struct {
 	webhookSecret string
 	queries       *db.Queries
 	resolver      *ontology.Resolver
+	producer      *queue.TaskProducer
 }
 
-func NewStripeWebhookHandler(client *stripe.Client, webhookSecret string, queries *db.Queries, resolver *ontology.Resolver) *StripeWebhookHandler {
+func NewStripeWebhookHandler(client *stripe.Client, webhookSecret string, queries *db.Queries, resolver *ontology.Resolver, producer *queue.TaskProducer) *StripeWebhookHandler {
 	return &StripeWebhookHandler{
 		client:        client,
 		webhookSecret: webhookSecret,
 		queries:       queries,
 		resolver:      resolver,
+		producer:      producer,
 	}
 }
 
@@ -216,6 +219,12 @@ func (s *StripeWebhookHandler) createTaskFromEvent(ctx context.Context, eventTyp
 	)
 	if err != nil {
 		return err
+	}
+
+	if s.producer != nil {
+		if pubErr := s.producer.Publish(ctx, task); pubErr != nil {
+			log.Printf("failed to publish task %s to redis stream: %v", task.ID, pubErr)
+		}
 	}
 
 	log.Printf("created task %s: type=%s agent=%s", task.ID, task.TaskType, task.TargetAgent)
