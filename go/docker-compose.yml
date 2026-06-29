@@ -1,0 +1,51 @@
+
+services:
+      
+  postgres:
+    image: postgres:16-alpine
+    container_name: billingmind-postgres
+    environment:
+      POSTGRES_USER : billingmind
+      POSTGRES_PASSWORD : billingmind
+      POSTGRES_DB : billingmind
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./infra/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready -U billingmind"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  redis:
+    image: redis:7-alpine
+    container_name : billingmind-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - SERVER_PORT=${SERVER_PORT}
+      - DATABASE_URL=postgresql://billingmind:billingmind@database:5432/billingmind?sslmode=disable
+    depends_on:
+      postgres:
+
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  pgdata:

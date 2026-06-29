@@ -1,0 +1,20 @@
+server:
+  port: 8000
+postgres:
+  host: localhost
+  port: 5432
+  user: billingmind
+  password: billingmind
+  dbname: billingmind
+  sslmode: disable
+redis:
+  addr: localhost:6379
+stripe:
+  secret_key: <secret_key>
+  webhook_secret: <webhook_secret>
+ontology_path: ../ontology/billing.jsonld
+agents:
+  billing_url: http://localhost:8001
+  recovery_url: http://localhost:8002
+  support_url: http://localhost:8003
+  audit_url: http://localhost:8004
