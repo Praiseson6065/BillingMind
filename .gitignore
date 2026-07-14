@@ -2,3 +2,6 @@ plan.md
 .env
 
 .vscode
+venv
+__pycache__
+*.json

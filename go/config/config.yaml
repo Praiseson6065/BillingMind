@@ -2,13 +2,13 @@ server:
   port: 8000
 postgres:
   host: localhost
-  port: 5432
+  port: 5433
   user: billingmind
   password: billingmind
   dbname: billingmind
   sslmode: disable
 redis:
-  addr: localhost:6379
+  addr: localhost:6380
 stripe:
   secret_key: ""
   webhook_secret: ""
